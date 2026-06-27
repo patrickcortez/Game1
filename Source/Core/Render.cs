@@ -1,5 +1,18 @@
 ﻿namespace Game1.Source.Core
 {
+
+    /*
+     * TODO's:
+     *  - Add Enemy Attack and Death
+     *  - Add Walls
+     *  - Add Objectives
+     *  - Add Player Health
+     */
+
+
+    /// <summary>
+    /// Map size constants
+    /// </summary>
    internal enum MapSize
     {
         X = 25,
@@ -10,12 +23,16 @@
     // Y 24 = Ground
 
     // Y 22< = Sky
-
+    
+    /// <summary>
+    /// Player definition/struct
+    /// </summary>
    internal struct Player
     {
         private char Representation;
         private (int x, int y) Origin;
         public (int x, int y) Position;
+        public bool HasJumped { get; set;}
 
         public Player(char Rep, (int x, int y) Org)
         {
@@ -33,6 +50,7 @@
             Representation = Rep;
             Origin = Org;
             Position = Org;
+
         }
 
         public char GetRepresentation()
@@ -50,8 +68,21 @@
             Position = (x, y);
         }
 
+        public bool CheckHit(Npc Enemy)
+        {
+            if (Position.y == Enemy.Position.y - 1 && (Position.x == Enemy.Position.x - 1 || Position.x == Enemy.Position.x + 1))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
     };
 
+    /// <summary>
+    /// Game Renderer 
+    /// </summary>
     internal static class Render
     {
 
@@ -59,14 +90,38 @@
      //   private static List<List<char>> BackMap;
         private static System.Timers.Timer time;
         private static Player player;
+        private static ConsoleKey CurrentKey;
+        private static List<Npc> Enemies;
+
+        private static void ReadInput()
+        {
+            CurrentKey = Console.ReadKey().Key;
+        }
+
+        private static List<Npc> InitEnemies(int max = 1)
+        {
+            List<Npc> temp = new();
+            Random xCoords = new();
+
+            for (int x = 0;x < max; x++)
+            {
+                
+                temp.Add(new('X', (xCoords.Next(0, (int)MapSize.X), (int)MapSize.Y - 2), true));
+            }
+
+            return temp;
+        }
 
         private static void InitiateMap()
         {
+            int EnemyCount = 0;
+
             // Initialize variables
             Map = new();
-            time = new() { Interval=40,Enabled=true };
+            time = new() { Interval=75,Enabled=true };
             player = new Player('O',(12,23));
-
+            Enemies = InitEnemies(2);
+            
             // Fill the map w/ whitespaces
             for(int y = 0; y < (int)MapSize.Y; y++)
             {
@@ -82,10 +137,47 @@
 
                     }
 
+                    if(EnemyCount < Enemies.Count && y == (int)MapSize.Y - 2)
+                    {
+                        Npc CurrentEnemy = Enemies[EnemyCount];
+                        
+                        if(CurrentEnemy.Position.x == x)
+                        {
+                            Row.Add(CurrentEnemy.Representation);
+                            EnemyCount++;
+                            continue;
+                        }
+
+                        
+                    }
+
                     Row.Add(' ');
                 }
 
                 Map.Add(Row);
+            }
+        }
+
+        private static void HandleEnemyMove()
+        {
+            foreach(Npc Enemy in Enemies)
+            {
+                Enemy.Move(Enemy.Position.x - 1,Enemy.Position.y);
+                Paint(Enemy.Position, Enemy.Representation);
+                // Put Space here in Enemy.Position.Y - 1 (TODO)
+
+                Enemy.Move(Enemy.Position.x + 1, Enemy.Position.y);
+                Paint(Enemy.Position, Enemy.Representation);
+                // Put Space here in Enemy.Position.Y - 1 (TODO)
+
+                Enemy.Move(Enemy.Position.x + 1, Enemy.Position.y);
+                Paint(Enemy.Position, Enemy.Representation);
+                // Put Space here in Enemy.Position.Y - 1 (TODO)
+
+                Enemy.Move(Enemy.Position.x - 1, Enemy.Position.y);
+                Paint(Enemy.Position, Enemy.Representation);
+                // Put Space here in Enemy.Position.Y - 1 (TODO)
+
             }
         }
 
@@ -129,6 +221,38 @@
                 Paint(player.Position, player.GetRepresentation());
                 Paint((player.Position.x - 1, player.Position.y), ' ');
             }
+
+            if (Arrow.Equals(ConsoleKey.Spacebar) && player.Position.y == (int)MapSize.Y - 2)
+            {
+                int jumpheight = 2;
+                for (int x = 0; x < jumpheight; x++){
+
+                    player.SetPosition(player.Position.x, player.Position.y - 1);
+                    Paint(player.Position, player.GetRepresentation());
+                    Paint((player.Position.x, player.Position.y + 1), ' ');
+                }
+            }
+        }
+
+        private static void Gravity()
+        {
+            int ground = (int)MapSize.Y - 2;
+
+            if (player.Position.y != ground)
+            {
+
+                
+
+                for(int x=0;x < (ground - player.Position.y);x++)
+                {
+
+                    player.SetPosition(player.Position.x, player.Position.y + 1);
+                    Paint(player.Position, player.GetRepresentation());
+                    Paint((player.Position.x, player.Position.y - 1), ' ');
+
+                }
+
+            }
         }
 
         public static int Run()
@@ -146,8 +270,9 @@
                     Console.SetCursorPosition(0, 0);
 
                     Show();
-
-
+                    HandleEnemyMove();
+                    Gravity();
+                    
                 };
 
                 time.Start();
@@ -155,11 +280,13 @@
                 while (true)
                 {
 
-                    ConsoleKeyInfo key =  Console.ReadKey();
+                    if (Console.KeyAvailable)
+                    {
+                        ReadInput();
+                        Move(CurrentKey);
+                    }
 
-                    Move(key.Key);
-
-                    if (key.Key.Equals(ConsoleKey.Escape))
+                    if (CurrentKey.Equals(ConsoleKey.Escape))
                     {
                         time.Stop();
                         break;
