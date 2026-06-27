@@ -1,0 +1,9 @@
+TODO:
+
+[X] Make the renderer
+[X] Make the player logic
+[ ] Make gravity 
+[ ] Make jumping
+[ ] Make walls w/ Collision 
+[ ] Make enemies (5 tile view range, 'X',killed by landing on top of them,increase score when killed)
+[ ] Make Segments (each segment is 25 x 25 or 50 x 50)
