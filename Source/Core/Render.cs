@@ -1,9 +1,11 @@
-﻿namespace Game1.Source.Core
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Game1.Source.Core
 {
 
     /*
      * TODO's:
-     *  - Add Enemy Attack and Death
      *  - Add Walls
      *  - Add Objectives
      *  - Add Player Health
@@ -78,6 +80,11 @@
             return false;
         }
 
+        public bool CheckDeath(Npc Enemy)
+        {
+            return Enemy.Position == Position;
+        }
+
     };
 
     /// <summary>
@@ -92,6 +99,7 @@
         private static Player player;
         private static ConsoleKey CurrentKey;
         private static List<Npc> Enemies;
+        private static string reason;
 
         private static void ReadInput()
         {
@@ -158,28 +166,68 @@
             }
         }
 
-        private static void HandleEnemyMove()
+        private static void HandleEnemyMove() // Enemy Movement Handler
         {
+            byte Delay = 75; // Delay when animating
+            
+
+
             foreach(Npc Enemy in Enemies)
             {
-                Enemy.Move(Enemy.Position.x - 1,Enemy.Position.y);
-                Paint(Enemy.Position, Enemy.Representation);
-                // Put Space here in Enemy.Position.Y - 1 (TODO)
+                if (!Npc.IsPlayerNear(Enemy, player))
+                {
+                    Enemy.CurrentState = State.IDLE;
 
-                Enemy.Move(Enemy.Position.x + 1, Enemy.Position.y);
-                Paint(Enemy.Position, Enemy.Representation);
-                // Put Space here in Enemy.Position.Y - 1 (TODO)
+                    Enemy.Move(Enemy.Position.x - 1, Enemy.Position.y); // Frame 1
+                    Paint(Enemy.Position, Enemy.Representation);
+                    Paint((Enemy.Position.x + 1, Enemy.Position.y), ' ');
 
-                Enemy.Move(Enemy.Position.x + 1, Enemy.Position.y);
-                Paint(Enemy.Position, Enemy.Representation);
-                // Put Space here in Enemy.Position.Y - 1 (TODO)
+                    Thread.Sleep(Delay);
 
-                Enemy.Move(Enemy.Position.x - 1, Enemy.Position.y);
-                Paint(Enemy.Position, Enemy.Representation);
-                // Put Space here in Enemy.Position.Y - 1 (TODO)
+                    Enemy.Move(Enemy.Position.x + 1, Enemy.Position.y);
+                    Paint(Enemy.Position, Enemy.Representation);
+                    Paint((Enemy.Position.x - 1, Enemy.Position.y), ' ');
+
+                    Thread.Sleep(Delay);
+
+                    Enemy.Move(Enemy.Position.x + 1, Enemy.Position.y);
+                    Paint(Enemy.Position, Enemy.Representation);
+                    Paint((Enemy.Position.x - 1, Enemy.Position.y), ' ');
+
+                    Thread.Sleep(Delay);
+
+                    Enemy.Move(Enemy.Position.x - 1, Enemy.Position.y);
+                    Paint(Enemy.Position, Enemy.Representation);
+                    Paint((Enemy.Position.x + 1, Enemy.Position.y), ' ');
+
+                    Thread.Sleep(Delay);
+                }
+                else
+                {
+                    int Distance = Enemy.Position.x - player.Position.x;
+                    Enemy.CurrentState = State.HUNT;
+
+                    for (int i = 0;i < Enemy.ViewRange;i++)
+                    {
+                        if (Distance >= 0)
+                        {
+                            Enemy.Move(Enemy.Position.x - 1, Enemy.Position.y);
+                            Paint(Enemy.Position, Enemy.Representation);
+                            Paint((Enemy.Position.x + 1, Enemy.Position.y), ' ');
+                        }
+                        else
+                        {
+                            Enemy.Move(Enemy.Position.x + 1, Enemy.Position.y);
+                            Paint(Enemy.Position, Enemy.Representation);
+                            Paint((Enemy.Position.x - 1, Enemy.Position.y), ' ');
+                        }
+                       
+                    }
+                }
 
             }
         }
+
 
         private static void Paint((int X,int Y) Position,char letter)
         {
@@ -255,6 +303,19 @@
             }
         }
 
+        public static bool Death()
+        {
+            foreach(Npc Enemy in Enemies)
+            {
+                if (player.CheckDeath(Enemy))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static int Run()
         {
 
@@ -267,12 +328,12 @@
                 time.Elapsed += (s, e) =>
                 {
 
-                    Console.SetCursorPosition(0, 0);
-
-                    Show();
                     HandleEnemyMove();
                     Gravity();
-                    
+
+                    Show();
+                    Console.SetCursorPosition(0, 0);
+
                 };
 
                 time.Start();
@@ -286,14 +347,29 @@
                         Move(CurrentKey);
                     }
 
+                    if (Death())
+                    {
+                        reason = "Death";
+                        time.Stop();
+                        break;
+                    }
+
                     if (CurrentKey.Equals(ConsoleKey.Escape))
                     {
+                        reason = "Escape";
                         time.Stop();
                         break;
                     }
 
                 }
 
+                if (reason.Equals("Escape"))
+                {
+                    Console.WriteLine("Good Bye...");
+                }else if (reason.Equals("Death"))
+                {
+                    Console.WriteLine("You Died to an Enemy");
+                }
 
                 return 0;
             }

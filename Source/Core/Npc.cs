@@ -6,7 +6,12 @@ using System.Threading.Tasks;
 
 namespace Game1.Source.Core
 {
-    
+    public enum State
+    {
+        IDLE,
+        HUNT
+    }
+
     internal class Npc
     {
         public char Representation { get; set; }
@@ -15,12 +20,16 @@ namespace Game1.Source.Core
 
         private const int MapX = (int)MapSize.X;
 
+        public State CurrentState { get; set; }
+
         public bool isDead { get; set; }
         public bool isEnemy { get; set; }
 
+        public byte ViewRange { get; set; }
+
         public (int x, int y) Position;
 
-        public Npc(char Rep,(int x,int y) StartPos,bool isOps = false)
+        public Npc(char Rep,(int x,int y) StartPos,bool isOps = false,byte VR = 3)
         {
             if((StartPos.x > MapX || StartPos.y > MapY) || StartPos.x < 0)
             {
@@ -34,6 +43,10 @@ namespace Game1.Source.Core
             isDead = false;
 
             isEnemy = isOps;
+
+            ViewRange = VR;
+
+            CurrentState = State.IDLE;
         }
 
         public void Move(int x,int y) // Moves enemy back and forth by 1 tile
@@ -45,6 +58,20 @@ namespace Game1.Source.Core
             }
 
             Position = (x, y);
+        }
+
+        public static bool IsPlayerNear(Npc Enemy,Player player)
+        {
+            int Distance = Enemy.Position.x - player.Position.x;
+
+            if(Distance <= Enemy.ViewRange || (Distance >= (-Enemy.ViewRange) && Distance < 0))
+            {
+                
+                return true;
+            }
+            
+
+            return false;
         }
 
         
