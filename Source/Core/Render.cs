@@ -174,6 +174,14 @@ namespace Game1.Source.Core
 
             foreach(Npc Enemy in Enemies)
             {
+
+                if (Enemy.CurrentState == State.DEAD)
+                {
+                    Enemies.Remove(Enemy);
+                    continue;
+
+                } 
+
                 if (!Npc.IsPlayerNear(Enemy, player))
                 {
                     Enemy.CurrentState = State.IDLE;
@@ -209,8 +217,22 @@ namespace Game1.Source.Core
 
                     for (int i = 0;i < Enemy.ViewRange;i++)
                     {
+
+                        if(Enemy.CurrentState == State.DEAD)
+                        {
+                            Enemies.Remove(Enemy);
+                            continue;
+
+                        }
+
                         if (Distance >= 0)
                         {
+                            if (player.Position.y == Enemy.Position.y - 1)
+                            {
+                                Enemy.CurrentState = State.DEAD;
+                                continue;
+                            }
+
                             Enemy.Move(Enemy.Position.x - 1, Enemy.Position.y);
                             Paint(Enemy.Position, Enemy.Representation);
                             Paint((Enemy.Position.x + 1, Enemy.Position.y), ' ');
@@ -263,7 +285,7 @@ namespace Game1.Source.Core
                 Paint((player.Position.x + 1,player.Position.y),' ');
             }
 
-            if (Arrow.Equals(ConsoleKey.RightArrow) && player.Position.x < 24)
+            if (Arrow.Equals(ConsoleKey.RightArrow) && player.Position.x < (int)MapSize.X - 1)
             {
                 player.SetPosition(player.Position.x + 1, player.Position.y);
                 Paint(player.Position, player.GetRepresentation());
@@ -354,6 +376,13 @@ namespace Game1.Source.Core
                         break;
                     }
 
+                    if(Enemies.Count == 0)
+                    {
+                        reason = "Win";
+                        time.Stop();
+                        break;
+                    }
+
                     if (CurrentKey.Equals(ConsoleKey.Escape))
                     {
                         reason = "Escape";
@@ -369,6 +398,9 @@ namespace Game1.Source.Core
                 }else if (reason.Equals("Death"))
                 {
                     Console.WriteLine("You Died to an Enemy");
+                }else if (reason.Equals("Win"))
+                {
+                    Console.WriteLine("Congrats you Killed All of the Enemies, You won");
                 }
 
                 return 0;

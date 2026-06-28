@@ -9,7 +9,8 @@ namespace Game1.Source.Core
     public enum State
     {
         IDLE,
-        HUNT
+        HUNT,
+        DEAD
     }
 
     internal class Npc
